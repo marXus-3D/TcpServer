@@ -11,7 +11,7 @@ namespace TcpServer
         static async Task Main(string[] args)
         {
             const int port = 8888;
-            TcpListener server = new TcpListener(IPAddress.Any, port);
+            TcpListener server = new(IPAddress.Any, port);
             server.Start();
             Console.WriteLine($"Server started on port {port}. Waiting for connections...");
 
@@ -19,11 +19,10 @@ namespace TcpServer
             {
                 while (true)
                 {
-                    TcpClient client = server.AcceptTcpClient();
+                    TcpClient client = await server.AcceptTcpClientAsync();
                     Console.WriteLine($"Client connected: {client.Client.RemoteEndPoint}");
-                    
-                    Thread clientThread = new Thread(() => HandleClient(client));
-                    clientThread.Start();
+
+                    _ = Task.Run(() => HandleClient(client));
                 }
             }
             catch (Exception ex)
@@ -36,40 +35,50 @@ namespace TcpServer
             }
         }
 
-        static void HandleClient(TcpClient client)
+        static async Task HandleClient(TcpClient client)
         {
             try
             {
                 using (client)
                 using (NetworkStream stream = client.GetStream())
-                using (StreamReader reader = new StreamReader(stream, Encoding.UTF8))
-                using (StreamWriter writer = new StreamWriter(stream, Encoding.UTF8) { AutoFlush = true })
                 {
+                    byte[] buffer = new byte[1024];
+
                     while (true)
                     {
-                        string command = reader.ReadLine();
-                        if (command == null) break;
+                        int bytesRead = await stream.ReadAsync(buffer);
+                        if (bytesRead == 0) break; // Client disconnected
 
-                        Console.WriteLine($"Received command: {command}");
-                        string response = ProcessCommand(command);
-                        writer.WriteLine(response);
-                        Console.WriteLine($"Sent response: {response}");
+                        string command = Encoding.UTF8.GetString(buffer, 0, bytesRead);
+                        command = command.Trim('\uFEFF').Trim(); // had to use this to remove BOM cause of UTF 
+                        Console.Write($"Received from {client.Client.RemoteEndPoint}: ");
+                        Console.ForegroundColor = ConsoleColor.Green;
+                        Console.WriteLine(command);
+                        Console.ResetColor();
+
+                        string response = ProcessCommand(command.Trim());
+                        byte[] responseBytes = Encoding.UTF8.GetBytes(response + "\n");
+                        await stream.WriteAsync(responseBytes);
                     }
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error handling client: {ex.Message}");
+                Console.WriteLine($"Error with {client.Client.RemoteEndPoint}: {ex.Message}");
+            }
+            finally
+            {
+                Console.WriteLine($"Client disconnected: {client.Client.RemoteEndPoint}");
             }
         }
 
         static string ProcessCommand(string command)
         {
-            switch (command?.ToUpper())
+            switch (command.ToUpper())
             {
                 case "GET_TEMP":
                     Random rnd = new();
-                    double temp = 20 + rnd.NextDouble() * 10;
+                    double temp = 30 + rnd.NextDouble() * 10;
                     return $"Temperature: {temp:F1}°C";
                 case "GET_STATUS":
                     return "Status: Active";

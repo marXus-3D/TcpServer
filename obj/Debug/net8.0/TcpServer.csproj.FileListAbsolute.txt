@@ -12,3 +12,4 @@ C:\Users\marcu\Documents\C#\TcpServer\obj\Debug\net8.0\refint\TcpServer.dll
 C:\Users\marcu\Documents\C#\TcpServer\obj\Debug\net8.0\TcpServer.pdb
 C:\Users\marcu\Documents\C#\TcpServer\obj\Debug\net8.0\TcpServer.genruntimeconfig.cache
 C:\Users\marcu\Documents\C#\TcpServer\obj\Debug\net8.0\ref\TcpServer.dll
+C:\Users\marcu\Documents\C#\TcpServer\obj\Debug\net8.0\TcpServer.sourcelink.json
