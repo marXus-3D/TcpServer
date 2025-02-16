@@ -11,8 +11,10 @@ namespace TcpServer
         static async Task Main(string[] args)
         {
             const int port = 8888;
+
             TcpListener server = new(IPAddress.Any, port);
             server.Start();
+
             Console.WriteLine($"Server started on port {port}. Waiting for connections...");
 
             try
